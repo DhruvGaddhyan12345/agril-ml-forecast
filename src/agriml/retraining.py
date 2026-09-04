@@ -13,10 +13,14 @@ def controlled_promotion(model, metrics: dict, model_dir: str | Path, max_rmse: 
     directory.mkdir(parents=True, exist_ok=True)
     candidate = directory / "candidate.joblib"
     previous_production = directory / "production.joblib"
+    decision_timestamp = datetime.now(timezone.utc).isoformat()
+    model_version = f"v{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     joblib.dump(model, candidate)
     if approved:
         joblib.dump(model, directory / "production.joblib")
     improvement = None if baseline_rmse is None else float(baseline_rmse - metrics["rmse"])
-    result = {"approved": approved, "decision": "PROMOTE" if approved else "KEEP_CURRENT", "candidate_metrics": metrics, "baseline_rmse": baseline_rmse, "improvement_rmse": improvement, "baseline_model": baseline_model, "dataset_version": dataset_version, "decision_timestamp": datetime.now(timezone.utc).isoformat(), "threshold": max_rmse, "candidate": str(candidate), "previous_production_exists": previous_production.exists(), "production": str(directory / "production.joblib") if approved else None}
+    result = {"approved": approved, "decision": "PROMOTE" if approved else "KEEP_CURRENT", "model_version": model_version if approved else None, "candidate_metrics": metrics, "baseline_rmse": baseline_rmse, "improvement_rmse": improvement, "baseline_model": baseline_model, "dataset_version": dataset_version, "decision_timestamp": decision_timestamp, "threshold": max_rmse, "candidate": str(candidate), "previous_production_exists": previous_production.exists(), "production": str(directory / "production.joblib") if approved else None}
+    if approved:
+        (directory / "model_metadata.json").write_text(json.dumps({"model_version": model_version, "metrics": metrics, "dataset_version": dataset_version, "created_at": decision_timestamp}, indent=2), encoding="utf-8")
     (directory / "promotion.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
     return result

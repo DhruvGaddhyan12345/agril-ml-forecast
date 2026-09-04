@@ -15,10 +15,12 @@ class ModelService:
         self.model_path = Path(model_path)
         self.model = joblib.load(model_path)
         self.log_path = Path(log_path)
+        metadata_path = self.model_path.with_name("model_metadata.json")
+        self.metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
 
     @property
     def model_version(self) -> str:
-        return self.model_path.stem
+        return str(self.metadata.get("model_version", self.model_path.stem))
 
     def predict(self, record: dict) -> float:
         frame = pd.DataFrame([{**record, "yield_lag_1": record.get("yield_lag_1", 4.0), "ndvi_rolling_3": record.get("ndvi_rolling_3", record["ndvi"])}])

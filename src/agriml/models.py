@@ -9,6 +9,8 @@ from sklearn.ensemble import ExtraTreesRegressor, HistGradientBoostingRegressor,
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.base import clone
+from sklearn.model_selection import TimeSeriesSplit
 
 from .features import FEATURE_COLUMNS
 
@@ -66,7 +68,14 @@ def benchmark(train: pd.DataFrame, test: pd.DataFrame, seed: int = 42) -> tuple[
         started = perf_counter()
         model.fit(train[FEATURE_COLUMNS], train["yield_tons_per_hectare"])
         predictions = model.predict(test[FEATURE_COLUMNS])
-        metrics.append({"model": name, "rmse": float(np.sqrt(mean_squared_error(test.yield_tons_per_hectare, predictions))), "mae": float(mean_absolute_error(test.yield_tons_per_hectare, predictions)), "r2": float(r2_score(test.yield_tons_per_hectare, predictions)), "fit_seconds": perf_counter() - started})
+        cv_scores = []
+        splitter = TimeSeriesSplit(n_splits=3)
+        for cv_train, cv_valid in splitter.split(train):
+            fold_model = clone(model) if name != "pytorch_mlp" else TorchMLPRegressor(seed=seed)
+            fold_model.fit(train.iloc[cv_train][FEATURE_COLUMNS], train.iloc[cv_train]["yield_tons_per_hectare"])
+            cv_prediction = fold_model.predict(train.iloc[cv_valid][FEATURE_COLUMNS])
+            cv_scores.append(float(np.sqrt(mean_squared_error(train.iloc[cv_valid]["yield_tons_per_hectare"], cv_prediction))))
+        metrics.append({"model": name, "rmse": float(np.sqrt(mean_squared_error(test.yield_tons_per_hectare, predictions))), "mae": float(mean_absolute_error(test.yield_tons_per_hectare, predictions)), "r2": float(r2_score(test.yield_tons_per_hectare, predictions)), "cv_rmse_mean": float(np.mean(cv_scores)), "cv_rmse_std": float(np.std(cv_scores)), "fit_seconds": perf_counter() - started})
         fitted[name] = (model, predictions)
     report = pd.DataFrame(metrics).sort_values("rmse").reset_index(drop=True)
     best_name = str(report.iloc[0].model)

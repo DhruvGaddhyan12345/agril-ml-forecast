@@ -29,6 +29,7 @@ def test_benchmark_has_six_reproducible_models():
     train, test = temporal_split(frame)
     metrics, _, _ = benchmark(train, test, 11)
     assert {"linear", "ridge", "random_forest", "extra_trees", "hist_gradient_boosting", "mlp"}.issubset(metrics["model"])
+    assert {"cv_rmse_mean", "cv_rmse_std"}.issubset(metrics.columns)
 
 
 def test_validation_rejects_missing_and_invalid_values():

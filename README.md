@@ -23,6 +23,10 @@ Agricultural yield varies across regions and depends on interacting environmenta
 - Crop characteristics
 - Historical agricultural patterns
 
+The benchmark uses leakage-safe `TimeSeriesSplit` cross-validation and a final chronological holdout. The full environment benchmarks nine models and writes measured results to `reports/benchmark.csv`; no metric is hard-coded.
+
+The latest verified run selected Extra Trees with holdout RMSE `0.3626`, compared with the Linear baseline RMSE `0.7923`, a measured `54.2%` reduction. This is a synthetic benchmark result, not a real-world agricultural claim; rerunning the pipeline regenerates the report.
+
 AgriML transforms these inputs into a production-oriented forecasting workflow:
 
 ```text
