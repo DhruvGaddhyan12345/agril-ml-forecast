@@ -13,4 +13,5 @@ models/*
 mlruns/
 mlflow.db
 reports/*.html
+reports/*.jsonl
 *.log

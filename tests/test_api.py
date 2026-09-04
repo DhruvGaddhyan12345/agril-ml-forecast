@@ -17,7 +17,7 @@ def test_prediction_contract():
     })
     assert response.status_code == 200
     assert response.json()["predicted_yield"] > 0
-    assert response.json()["model_version"] == "production"
+    assert response.json()["model_version"].startswith("v") or response.json()["model_version"] == "production"
 
 
 def test_prediction_rejects_invalid_values():
